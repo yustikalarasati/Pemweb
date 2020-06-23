@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>REST API using jQuery</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.1/css/bootstrap.min.css">
+</head>
+
+<body>
+    <div class="container" style="margin-top: 100px;">
+        <h1 class="test">heading</h1>
+        <div class="form-group">
+            <label for="categories">Category</label>
+            <select class="form-control" id="categories" aria-describedby="categoryHelp">
+            </select>
+            <small id="emailHelp" class="form-text text-muted">Pick your category</small>
+        </div>
+        <div class="form-group">
+            <label for="place">Search Place</label>
+            <input type="text" class="form-control" id="place" aria-describedby="placeHelp" value="sunter" />
+            <small id="placeHelp" class="form-text text-muted">Enter your query</small>
+        </div>
+        <div class="form-group">
+            <label for="date">Date visit</label>
+            <input type="date" class="form-control" id="date" aria-describedby="dateHelp" value="2018-05-30" />
+            <small id="dateHelp" class="form-text text-muted">Pick your date to visit</small>
+        </div>
+        <div class="form-group">
+            <label for="time">Time visit</label>
+            <input type="time" class="form-control" id="time" aria-describedby="timeHelp" value="12:00" />
+            <small id="timeHelp" class="form-text text-muted">Pick your time to visit</small>
+        </div>
+        <button class="btn btn-block btn-primary" id="submit">Submit</button>
+        <hr>
+        <div class="row" id="weatherResult">
+
+        </div>
+        <hr>
+        <div class="row" id="result">
+
+        </div>
+    </div>
+    <script src="./jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.3/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.1.1/js/bootstrap.min.js"></script>
+
+    <script id="hidden-template" type="text/x-custom-template">
+        <div class="col-sm-12 col-md-6 col-lg-4">
+            <div class="card">
+                <img class="card-img-top" src="" alt="Restaurant's image">
+                <div class="card-body">
+                    <h5 class="card-title"></h5>
+                    <p class="card-text"></p>
+                    <a href="#" target="_blank" class="btn btn-block btn-primary btn-view">View</a>
+                </div>
+            </div>
+        </div>
+    </script>
+    <script id="hidden-template-weather" type="text/x-custom-template">
+        <div class="col-sm-12">
+            <div class="card text-center">
+                <div class="card-header">
+                    Weather Forecast
+                </div>
+                <div class="card-body">
+                    <p class="card-text card-date"></p>
+                    <h5 class="card-title"></h5>
+                    <p class="card-text card-status"></p>
+                </div>
+                <div class="card-footer text-muted">
+                    <a href="https://darksky.net/poweredby/">Powered by Dark Sky</a>
+                </div>
+            </div>
+        </div>
+    </script>
+
+    <script>
+        var apiKey = 'e29d6f06f07dc5ed48520682a437526a';
+        var baseUrl = 'https://developers.zomato.com/api/v2.1';
+        var place;
+        var start = 0;
+        $(document).ready(function () {
+            function getCategories() {
+                var url = baseUrl + '/categories';
+
+                $.ajax({
+                    url: url,
+                    headers: {
+                        'user-key': apiKey
+                    }
+                }).then(function (data) {
+                    console.log(data);
+                    for (var i = 0; i < data.categories.length; i++) {
+                        var element = data.categories[i].categories;
+                        $("#categories").append(new Option(element.name, element.id));
+                    }
+                    $("#categories").val(1);
+                });
+            }
+
+            $("#submit").click(function () {
+                var placeSearch = $("#place").val();
+                var query = jQuery.param({
+                    query: placeSearch
+                });
+                var url = baseUrl + '/locations?' + query;
+
+                console.log(url);
+
+                $.ajax({
+                    url: url,
+                    headers: {
+                        'user-key': apiKey
+                    }
+                }).then(function (data) {
+                    if (data.location_suggestions.length > 0) {
+                        place = data.location_suggestions[0];
+                        getWeather();
+                        getRestaurant();
+                    }
+                });
+            });
+
+            function getWeather() {
+                var key = "5f1ea22a92e9fd7de17d44976ec4252a";
+                var proxyUrl = 'https://cors-anywhere.herokuapp.com/';
+                var weatherUrl = 'https://api.darksky.net/forecast/';
+                var lat = place.latitude;
+                var lon = place.longitude;
+                var time = $("#date").val() + "T" + $("#time").val() + ":00+0700";
+                //expected datetime format: [YYYY]-[MM]-[DD]T[HH]:[MM]:[SS][timezone]
+
+                var url = proxyUrl + weatherUrl + key + '/' + lat + ',' + lon + ',' + time +
+                    '?units=si&exclude=minutely,hourly,daily,alerts,flags';
+
+                console.log(url);
+
+                $.ajax({
+                    url: url,
+                    header: {
+                        'Access-Control-Allow-Headers': '*'
+                    }
+                }).then(function (data) {
+                    console.log(data);
+                    var weather = data.currently;
+                    var template = $('#hidden-template-weather').html();
+
+                    var item = $(template).clone();
+
+                    $(item).find('.card-title').html(weather.summary);
+                    $(item).find('.card-date').html($("#date").val() + " " + $("#time").val());
+                    $(item).find('.card-status').html('Temperature: ' + weather.temperature +
+                        '&deg;C / Humidity: ' + weather.humidity);
+
+                    $("#weatherResult").html(item);
+                });
+            }
+
+            function getRestaurant() {
+                var query = jQuery.param({
+                    entity_id: place.entity_id,
+                    entity_type: place.entity_type,
+                    category: $("#categories").val(),
+                    start: start,
+                    sort: 'rating'
+                })
+                var url = baseUrl + '/search?' + query;
+
+                $.ajax({
+                    url: url,
+                    headers: {
+                        'user-key': apiKey
+                    }
+                }).then(function (data) {
+                    console.log(data);
+                    start = data.results_start + data.results_shown + 1;
+                    if (data.results_found > 0) {
+                        for (var i = 0; i < data.restaurants.length; i++) {
+                            var restaurant = data.restaurants[i].restaurant;
+                            var template = $('#hidden-template').html();
+
+                            var item = $(template).clone();
+
+                            $(item).find('.card-img-top').attr('src', restaurant.thumb);
+                            $(item).find('.card-title').html(restaurant.name);
+                            $(item).find('.card-text').html('Rating: ' + restaurant.user_rating.aggregate_rating);
+                            $(item).find('.btn-view').attr('href', restaurant.url);
+                            $("#result").append(item);
+                        }
+                    }
+                });
+            }
+
+            getCategories();
+        });
+    </script>
+</body>
+
+</html>

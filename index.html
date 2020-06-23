@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  <meta name="description" content="">
+  <meta name="author" content="">
+
+  <title>Rest API Get Doctor</title>
+
+  <!-- Bootstrap Core CSS -->
+  <link href="vendor/bootstrap/css/bootstrap.min.css" rel="stylesheet">
+
+  <!-- Custom Fonts -->
+  <link href="vendor/font-awesome/css/font-awesome.min.css" rel="stylesheet" type="text/css">
+  <link href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,700,300italic,400italic,700italic" rel="stylesheet"
+    type="text/css">
+  <link href="vendor/simple-line-icons/css/simple-line-icons.css" rel="stylesheet">
+
+  <!-- Custom CSS -->
+  <link href="css/stylish-portfolio.min.css" rel="stylesheet">
+
+</head>
+
+<body id="page-top">
+  <!-- Navigation -->
+  <a class="menu-toggle rounded" href="#">
+    <i class="fa fa-bars"></i>
+  </a>
+  <nav id="sidebar-wrapper">
+    <ul class="sidebar-nav">
+      <li class="sidebar-brand">
+        <a class="js-scroll-trigger" href="#page-top">Navigate</a>
+      </li>
+      <li class="sidebar-nav-item">
+        <a class="js-scroll-trigger" href="#page-top">Home</a>
+      </li>
+      <li class="sidebar-nav-item">
+        <a class="js-scroll-trigger" href="#about">About</a>
+      </li>
+
+    </ul>
+  </nav>
+
+  <!-- Header -->
+  <header class="masthead d-flex">
+    <div class="container text-center my-auto">
+      <h1 class="mb-1">Simply Health</h1>
+      <h3 class="mb-5">
+        <em>Your Health is Our Priority</em>
+      </h3>
+      <a class="btn btn-primary btn-xl js-scroll-trigger" href="#about">Find Out More</a>
+    </div>
+    <div class="overlay"></div>
+  </header>
+
+  <!-- About -->
+  <section class="content-section bg-light" id="about">
+    <div>
+      <div class="container" style="margin-top: 100px;">
+        <h1 class="Doctor">Search Doctor</h1>
+        <div class="form-group">
+          <label for="conditions">Specialities</label>
+          <select class="form-control" id="specialities" aria-describedby="conditionsHelp">
+          </select>
+        </div>
+        <button class="btn btn-block btn-primary" id="submit" onclick="getDoctor()">SUBMIT</button>
+        <hr>
+        <h6 id="spresult">About Specialities : </h6>
+        <div class="row" id="result">
+
+        </div>
+      </div>
+      <!--<script src="https://code.jquery.com/jquery-3.3.1.slim.min.js"></script>
+            <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.3/umd/popper.min.js"></script>-->
+      <script src="https://code.jquery.com/jquery-3.3.1.min.js"></script>
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.3/umd/popper.min.js"></script>
+      <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.1.1/js/bootstrap.min.js"></script>
+      <script id="hidden-template" type="text/x-custom-template">
+                <div class="col-sm-12 col-md-6 col-lg-4">
+                    <div class="card">
+                        <img class="card-img-top" src="" alt="Restaurant's image">
+                        <div class="card-body">
+                            <h5 class="card-title"></h5>
+                            <p class="card-text"></p>
+                            <a href="#" target="_blank" class="btn btn-block btn-primary btn-view">View</a>
+                        </div>
+                    </div>
+                </div>
+            </script>
+      <script>
+        //var apiKey = 'ebfb424fb077c8d8856c997c52ce9b6f';
+        var resource_url = "https://api.betterdoctor.com/2016-03-01/conditions?user_key=ebfb424fb077c8d8856c997c52ce9b6f";
+        $(document).ready(function () {
+          getIllness();
+        });
+
+        function getIllness() {
+
+          $.ajax({
+            url: "https://api.betterdoctor.com/2016-03-01/specialties?limit=60&user_key=ebfb424fb077c8d8856c997c52ce9b6f"
+          }).then(function (param) {
+            //console.log(param.data[1]);
+            for (var i = 0; i < 60; i++) {
+              //var element = param.data[i];
+              $("#specialities").append(new Option(param.data[i].uid));
+            }
+          });
+        }
+        var jeson;
+        function getDoctor() {
+          DictionaryFind();
+          $.ajax({
+            url: "https://api.betterdoctor.com/2016-03-01/doctors?specialty_uid=" + document.getElementById("specialities").value + "&location=37.773%2C-122.413%2C100&user_location=37.773%2C-122.413&skip=0&limit=30&user_key=ebfb424fb077c8d8856c997c52ce9b6f"
+          }).then(function (hasil) {
+            console.log(hasil);
+            jeson = hasil;
+            for (var i = 0; i < jeson.data.length; i++) {
+              var template = $('#hidden-template').html();
+              var item = $(template).clone();
+              var kota = jeson.data[i].practices[0].visit_address.city;
+              var state = jeson.data[i].practices[0].visit_address.state_long;
+              var street = jeson.data[i].practices[0].visit_address.street;
+              $(item).find('.card-img-top').attr('src', jeson.data[i].profile.image_url);
+              $(item).find('.card-title').html(jeson.data[i].profile.first_name);
+              $(item).find('.card-text').html('Address: ' + street + "," + kota + "," + state);
+              $(item).find('.btn-view').attr('href', jeson.data[i].practices[0].website);
+              $("#result").append(item);
+            }
+          });
+        }
+        var pansos;
+        function DictionaryFind() {
+          var spc = document.getElementById("specialities").value;
+          spc = spc.replace(/-/g, "+");
+          $.ajax({
+            async: true,
+            crossDomain: true,
+            url: "https://cors-anywhere.herokuapp.com/https://od-api.oxforddictionaries.com:443/api/v1/entries/en/" + spc,
+            method: "GET",
+            headers:
+              {
+                "app_key": "ae04c8d12732afe41c4bfbe9bb931180",
+                "app_id": "f3209500",
+                "Accept": "application/json",
+                "Access-Control-Allow-Headers": "*",
+                "Cache-Control": "no-cache",
+                "Postman-Token": "e27b5a14-0f93-440b-af32-4285c633f37a"
+              },
+
+            error: function (ajaxContext) {
+              spc = document.getElementById("specialities").value;
+              spc = spc.replace(/-/g, " ");
+              document.getElementById("spresult").textContent = "About " + spc + ": " + "unfortunately there is no explanation in oxford database";
+            }
+
+          }).done(function (_jsondata) {
+            pansos = _jsondata;
+            spc = document.getElementById("specialities").value;
+            spc = spc.replace(/-/g, " ");
+            document.getElementById("spresult").textContent = "About " + spc + ": " + pansos.results[0].lexicalEntries[0].entries[0].senses[0].definitions[0];
+          });
+        }
+      </script>
+    </div>
+    <a class="scroll-to-top rounded js-scroll-trigger" href="#page-top">
+      <i class="fa fa-angle-up"></i>
+    </a>
+    <script src="vendor/jquery/jquery.min.js"></script>
+    <script src="vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
+    <script src="vendor/jquery-easing/jquery.easing.min.js"></script>
+    <script src="js/stylish-portfolio.min.js"></script>
+
+</body>
+
+</html>
